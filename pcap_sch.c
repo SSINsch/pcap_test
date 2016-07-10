@@ -116,16 +116,16 @@ int main(int argc, char *argv[])
 	else
 		printf("device: %s\n", device);
 
-    // convert the information to look good 
-    net_addr.s_addr = net;
-    if(inet_ntoa(net_addr) == NULL) {
+        // convert the information to look good 
+	net_addr.s_addr = net;
+	 if(inet_ntoa(net_addr) == NULL) {
         printf("Cannot convert >> net_addr");
         return 0;
-    }
-    printf("NET : %s\n", inet_ntoa(net_addr));
-    mask_addr.s_addr = mask;
-    printf("MSK : %s\n", inet_ntoa(mask_addr));
-    printf("--------------------------------\n");
+	}
+	printf("NET : %s\n", inet_ntoa(net_addr));
+	mask_addr.s_addr = mask;
+	printf("MSK : %s\n", inet_ntoa(mask_addr));
+	printf("--------------------------------\n");
 
 	// get device information
 	if(pcap_lookupnet(device, &net, &mask, errorbuffer) == -1)

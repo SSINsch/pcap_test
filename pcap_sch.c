@@ -19,6 +19,7 @@
 int count;
 
 void callback(u_char *useless, const struct pcap_pkthdr *pkthdr, const u_char *packet);
+void dumpPayload(const u_char *payload, int len);
 
 int main(int argc, char *argv[])
 {
@@ -108,8 +109,13 @@ void callback(u_char *useless, const struct pcap_pkthdr *pkthdr, const u_char *p
             printf("Source port      : %d\n" , ntohs(tcph->source));
             printf("Destination Port : %d\n" , ntohs(tcph->dest));
 
+            
             data = (char *)( (u_char*)tcph + (tcph->doff * 4));
-            //dumpPayload();
+            printf("packet   len: %d\n", pkthdr->len);
+            printf("ethernet len: %lu\n", sizeof(struct ether_header));
+            printf("ip_hdr   len: %d\n", (iph->ip_hl * 4));
+            printf("tcp_hdr  len: %d\n", (tcph->doff * 4));
+            dumpPayload(data, pkthdr->len - sizeof(struct ether_header) - (iph->ip_hl * 4) - (tcph->doff * 4) );
         }
         else	printf("[No TCP packet]");
     }
@@ -117,34 +123,23 @@ void callback(u_char *useless, const struct pcap_pkthdr *pkthdr, const u_char *p
     printf("\n\n");
 }
 
-void dumpPayload(const u_char *payload, int len, int offset) {
+void dumpPayload(const u_char *payload, int len) {
 	int i;
-	int gap;
 	const u_char *ch;
 
-	/* offset */
-	printf("%05d   ", offset);
-	
+	if(len <= 0)	return;
+
 	/* hex */
 	ch = payload;
+	printf("       ====== PAYLOAD ======\n");
 	for(i = 0; i < len; i++) {
+		if ( (i % 16) == 0 )	printf("%04x | ", i);
 		printf("%02x ", *ch);
 		ch++;
-		/* print extra space after 8th byte for visual aid */
-		if (i == 7)
-			printf(" ");
+
+		if ( ( (i % 16) == 15 ) && (i != 0) )	printf("\n");
 	}
-	/* print space to handle line less than 8 bytes */
-	if (len < 8)
-		printf(" ");
 	
-	/* fill hex gap with spaces if not full line */
-	if (len < 16) {
-		gap = 16 - len;
-		for (i = 0; i < gap; i++) {
-			printf("   ");
-		}
-	}
 	printf("\n");
 	return;
 }

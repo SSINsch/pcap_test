@@ -37,8 +37,7 @@ int main(int argc, char *argv[])
 		printf("---PROGRAM FORMAT---\n");
 		printf("%s [number_of_pakcet]\n", argv[0]);
 	}
-	if(argc == 1)
-		argv[1] = "0";
+	if(argc == 1)	argv[1] = "0";
 
 	// find the device
 	device = pcap_lookupdev(errorbuffer);
@@ -46,10 +45,13 @@ int main(int argc, char *argv[])
 		printf("No devices: %s\n", errorbuffer);
 		return 0;
 	}
-	else
-		printf("device: %s\n", device);
+	else	printf("device: %s\n", device);
 
-        // convert the information to look good 
+	// get device information
+	if(pcap_lookupnet(device, &net, &mask, errorbuffer) == -1)
+		printf("Cannot get information of devce %s: %s\n", device, errorbuffer);
+
+    // convert the information to look good 
 	net_addr.s_addr = net;
 	 if(inet_ntoa(net_addr) == NULL) {
         printf("Cannot convert >> net_addr");
@@ -59,10 +61,6 @@ int main(int argc, char *argv[])
 	mask_addr.s_addr = mask;
 	printf("MSK : %s\n", inet_ntoa(mask_addr));
 	printf("--------------------------------\n");
-
-	// get device information
-	if(pcap_lookupnet(device, &net, &mask, errorbuffer) == -1)
-		printf("Cannot get information of devce %s: %s\n", device, errorbuffer);
 
 	// open the device
 	pcd = pcap_open_live(device, PACKET_MAX_BYTES, PROMISCUOUS_MODE, WAIT_MAX_TIME, errorbuffer);
@@ -129,9 +127,8 @@ void dumpPayload(const u_char *payload, int len) {
 
 	if(len <= 0)	return;
 
-	/* hex */
 	ch = payload;
-	printf("       ====== PAYLOAD ======\n");
+	printf("       ****** PAYLOAD ******\n");
 	for(i = 0; i < len; i++) {
 		if ( (i % 16) == 0 )	printf("%04x | ", i);
 		printf("%02x ", *ch);

@@ -16,9 +16,6 @@
 #define NON_PROMISCUOUS		0
 #define WAIT_MAX_TIME		1000
 
-struct ip *iph;				// IP header struct
-struct tcphdr *tcph;		// TCP header struct
-struct ether_header *eth;	// ethernet header struct
 int count;
 
 void callback(u_char *useless, const struct pcap_pkthdr *pkthdr, const u_char *packet);
@@ -75,13 +72,17 @@ int main(int argc, char *argv[])
 
 	// get the packet
 	pcap_loop(pcd, atoi(argv[1]), callback, NULL);
-
 	pcap_close(pcd);
 
 	return 1;
 }
 
 void callback(u_char *useless, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
+	struct ip *iph;				// IP header struct
+	struct tcphdr *tcph;		// TCP header struct
+	struct ether_header *eth;	// ethernet header struct
+	char *data;					// payload(Data)
+
 	// get ehternet header 
     eth = (struct ether_header *)packet;
 
@@ -100,18 +101,50 @@ void callback(u_char *useless, const struct pcap_pkthdr *pkthdr, const u_char *p
         	printf("Source MAC      : %02X:%02X:%02X:%02X:%02X:%02X\n", eth->ether_shost[0], eth->ether_shost[1], eth->ether_shost[2], eth->ether_shost[3], eth->ether_shost[4], eth->ether_shost[5]);
         	printf("Desitnation MAC : %02X:%02X:%02X:%02X:%02X:%02X\n", eth->ether_dhost[0], eth->ether_dhost[1], eth->ether_dhost[2], eth->ether_dhost[3], eth->ether_dhost[4], eth->ether_dhost[5]);
 
-        	printf("Version     : %d\n", iph->ip_v);
-        	printf("Header Len  : %d\n", iph->ip_hl);
         	printf("source Address      : %s\n", inet_ntoa(iph->ip_src));
         	printf("Destination Address : %s\n", inet_ntoa(iph->ip_dst));
             
-            tcph = (struct tcp *)(packet + iph->ip_hl * 4);
+            tcph = (struct tcphdr *)(packet + iph->ip_hl * 4);
             printf("Source port      : %d\n" , ntohs(tcph->source));
             printf("Destination Port : %d\n" , ntohs(tcph->dest));
+
+            data = (char *)( (u_char*)tcph + (tcph->doff * 4));
+            //dumpPayload();
         }
+        else	printf("[No TCP packet]");
     }
-    else{
-    	printf("[No IP packet]");
-    }
+    else	printf("[No IP packet]");
     printf("\n\n");
+}
+
+void dumpPayload(const u_char *payload, int len, int offset) {
+	int i;
+	int gap;
+	const u_char *ch;
+
+	/* offset */
+	printf("%05d   ", offset);
+	
+	/* hex */
+	ch = payload;
+	for(i = 0; i < len; i++) {
+		printf("%02x ", *ch);
+		ch++;
+		/* print extra space after 8th byte for visual aid */
+		if (i == 7)
+			printf(" ");
+	}
+	/* print space to handle line less than 8 bytes */
+	if (len < 8)
+		printf(" ");
+	
+	/* fill hex gap with spaces if not full line */
+	if (len < 16) {
+		gap = 16 - len;
+		for (i = 0; i < gap; i++) {
+			printf("   ");
+		}
+	}
+	printf("\n");
+	return;
 }

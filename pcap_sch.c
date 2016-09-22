@@ -15,7 +15,6 @@
 #define PROMISCUOUS_MODE	1
 #define NON_PROMISCUOUS		0
 #define WAIT_MAX_TIME		1000
-
 int count;
 
 void callback(u_char *useless, const struct pcap_pkthdr *pkthdr, const u_char *packet);
@@ -31,6 +30,7 @@ int main(int argc, char *argv[])
 	struct in_addr	net_addr;				// address of ip
 	struct in_addr	mask_addr;				// address of mask
 	const u_char *packet;					// packet
+    char ip_temp[INET_ADDRSTRLEN + 1];
 
 	// program format
 	if(argc != 2 || argc != 1){
@@ -53,13 +53,14 @@ int main(int argc, char *argv[])
 
     // convert the information to look good 
 	net_addr.s_addr = net;
-	 if(inet_ntoa(net_addr) == NULL) {
+	 if(inet_ntop(AF_INET, &net_addr, ip_temp, INET_ADDRSTRLEN) == NULL) {
         printf("Cannot convert >> net_addr");
         return 0;
 	}
-	printf("NET : %s\n", inet_ntoa(net_addr));
+	printf("NET : %s\n", ip_temp);
 	mask_addr.s_addr = mask;
-	printf("MSK : %s\n", inet_ntoa(mask_addr));
+	inet_ntop(AF_INET, &mask_addr, ip_temp, INET_ADDRSTRLEN);
+	printf("MSK : %s\n", ip_temp);
 	printf("--------------------------------\n");
 
 	// open the device
@@ -70,7 +71,8 @@ int main(int argc, char *argv[])
 	}
 
 	// get the packet
-	pcap_loop(pcd, atoi(argv[1]), callback, NULL);
+	char *parameter;
+	pcap_loop(pcd, strtol(argv[1], &parameter, 10), callback, NULL);
 	pcap_close(pcd);
 
 	return 1;
@@ -81,6 +83,7 @@ void callback(u_char *useless, const struct pcap_pkthdr *pkthdr, const u_char *p
 	struct tcphdr *tcph;		// TCP header struct
 	struct ether_header *eth;	// ethernet header struct
 	char *data;					// payload(Data)
+	char ip_src[INET_ADDRSTRLEN + 1], ip_dst[INET_ADDRSTRLEN + 1];
 
 	// get ehternet header 
     eth = (struct ether_header *)packet;
@@ -100,8 +103,10 @@ void callback(u_char *useless, const struct pcap_pkthdr *pkthdr, const u_char *p
         	printf("Source MAC      : %02X:%02X:%02X:%02X:%02X:%02X\n", eth->ether_shost[0], eth->ether_shost[1], eth->ether_shost[2], eth->ether_shost[3], eth->ether_shost[4], eth->ether_shost[5]);
         	printf("Desitnation MAC : %02X:%02X:%02X:%02X:%02X:%02X\n", eth->ether_dhost[0], eth->ether_dhost[1], eth->ether_dhost[2], eth->ether_dhost[3], eth->ether_dhost[4], eth->ether_dhost[5]);
 
-        	printf("source Address      : %s\n", inet_ntoa(iph->ip_src));
-        	printf("Destination Address : %s\n", inet_ntoa(iph->ip_dst));
+        	inet_ntop(AF_INET, &iph->ip_src, ip_src, INET_ADDRSTRLEN);
+        	inet_ntop(AF_INET, &iph->ip_dst, ip_dst, INET_ADDRSTRLEN);
+        	printf("source Address      : %s\n", ip_src);
+        	printf("Destination Address : %s\n", ip_dst);
             
             tcph = (struct tcphdr *)(packet + iph->ip_hl * 4);
             printf("Source port      : %d\n" , ntohs(tcph->source));
